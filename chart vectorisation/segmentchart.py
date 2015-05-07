@@ -42,7 +42,7 @@ for i in range( numvertices):
             connections.append((i,j))
             
 
-print "vertices: ", mc
+print "vertices: ", np.array(mc).astype(np.uint32)
 print "connections: ", connections
 
 mask3 = np.zeros(mask2.shape, dtype=np.uint8)
