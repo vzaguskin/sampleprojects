@@ -10,6 +10,12 @@ from scipy.signal.signaltools import correlate2d as c2d
 from scipy.ndimage.interpolation import affine_transform
 from math import sin, cos, radians
 
+from sklearn.decomposition import RandomizedPCA, PCA, KernelPCA
+from sklearn.grid_search import GridSearchCV
+from sklearn.svm import SVC, LinearSVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+
 def prepareDigits():
     lstout=[]
     fontsize=25
@@ -99,10 +105,55 @@ def afineKNN(choices, item):
     return pred
 
 
+def recognizePCA(train, trainlab, test, labels, num=None):
+
+    train4pca = np.array(train)
+
+    n_components = 20
+
+    print "fitting pca"
+    pca = RandomizedPCA(n_components=n_components).fit(train4pca)
+    #pca = PCA(n_components=n_components, whiten=False).fit(train4pca)
+    print "fitted pca"
+
+    xtrain = pca.transform(train4pca)
+
+    if num is None:
+        num=len(test)
+
+    test4pca = np.array(test)
+
+    xtest = pca.transform(test4pca)
+
+    clf = KNeighborsClassifier()
+    #clf = DecisionTreeClassifier()
+    #clf=LinearSVC()
+    print "fitting knn"
+    clf = clf.fit(xtrain, trainlab)
+    print "fitted knn"
+    y_pred = clf.predict(xtest[:num])
+    print "predicted"
+    r=0
+    w=0
+    for i in range(num):
+        if y_pred[i] == labels[i]:
+            r+=1
+        else:
+            w+=1
+    print "tested ", num, " digits"
+    print "correct: ", r, "wrong: ", w, "error rate: ", float(w)*100/(r+w), "%"
+    print "got correctly ", float(r)*100/(r+w), "%"
+
+    return pca.components_
+    #saveIm
+
+
+
+
 digitslst = prepareDigits()
 
 mndata = MNIST('H:/tools/MNIST/')
-#mndata.load_training()
+trainims, trainlabels = mndata.load_training()
 ims, labels = mndata.load_testing()
 #print len(ims[0])
 
@@ -129,10 +180,13 @@ def runtest(ims, labels, predictFun, testlen=None):
             w+=1
     print r, w, float(w)/(r+w)
 
+
+pcas = recognizePCA(trainims, trainlabels, ims, labels)
+saveIm(pcas, "pcas", pcas.shape[0])
 #testafine(ims)
 #runtest(ims, labels, afineKNN, 10)
-saveIm(ims, "mnist", 10)
-saveIm(digitslst, "digits", 10)
+#saveIm(ims, "mnist", 10)
+#saveIm(digitslst, "digits", 10)
 
 #imsave("test1.jpg", im0)
 #print labels[0]
