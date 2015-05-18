@@ -148,6 +148,69 @@ def recognizePCA(train, trainlab, test, labels, num=None):
     #saveIm
 
 
+def createArchetypes(train, labels):
+    trainnp = np.array(train).astype(np.float)
+    labelsnp=np.array(labels).astype(np.uint8)
+
+    #print trainnp.shape
+    #return
+
+    res = np.zeros((10,784))
+    for n in range(10):
+        ns=(labelsnp==n)
+        trainns = trainnp[ns, :]
+
+        archn = np.mean(trainns, axis=0)
+        res[n,:]=archn
+    return res
+    #print archzero.min(), archzero.max(), archzero.mean()
+        #imsave("testres/arch" +str(n) +".jpg", archn.reshape((28,28)) )
+
+    #print trainzeros.shape
+
+def archetypalMult(archs, labels, test, testlabels, num=None):
+    if num is None:
+        num=len(test)
+    preds=[]
+    for i in range(num):
+        arr=np.zeros(10)
+        for j in range(10):
+            arr[j]=np.sum(archs[j]*test[i])
+        pred = np.argmax(arr)
+        preds.append(pred)
+        #print pred, testlabels[i]
+
+    r=0
+    w=0
+    for i in range(num):
+        if preds[i] == testlabels[i]:
+            r+=1
+        else:
+            w+=1
+    print "tested ", num, " digits"
+    print "correct: ", r, "wrong: ", w, "error rate: ", float(w)*100/(r+w), "%"
+    print "got correctly ", float(r)*100/(r+w), "%"
+
+
+def archetypalKNN(archs, labels, test, testlabels):
+    clf = KNeighborsClassifier()
+    clf = clf.fit(archs, labels)
+
+    y_pred = clf.predict(test)
+
+    #print len(y_pred), len(testlabels)
+
+    r=0
+    w=0
+    for i in range(len(testlabels)):
+        if y_pred[i] == testlabels[i]:
+            r+=1
+        else:
+            w+=1
+    print "tested ", len(testlabels), " digits"
+    print "correct: ", r, "wrong: ", w, "error rate: ", float(w)*100/(r+w), "%"
+    print "got correctly ", float(r)*100/(r+w), "%"
+
 
 
 digitslst = prepareDigits()
@@ -163,6 +226,18 @@ def saveIm(ims, pref, n):
         fname=pref + str(i)+".png"
         im0 = np.array(ims[i]).reshape((28,28))
         imsave("testres/"+fname, im0)
+
+def savePCAs(pcas):
+    res = np.zeros((150, 120), dtype=np.float)
+    npcas = len(pcas)
+
+    for i, pca in enumerate(pcas):
+        col = i/5
+        row = i%5
+        #print row, col, pca.dtype, pca.max()
+        res[row*28:(row+1)*28, col*28:(col+1)*28]=pca.reshape((28,28))
+    imsave("testres/allpcas.jpg", res)
+
 
 def runtest(ims, labels, predictFun, testlen=None):
     r=0
@@ -181,8 +256,13 @@ def runtest(ims, labels, predictFun, testlen=None):
     print r, w, float(w)/(r+w)
 
 
+#archs = createArchetypes(trainims, trainlabels)
+#archetypalKNN(archs, range(10), ims, labels)
+#archetypalMult(archs, range(10), ims, labels)
+
 pcas = recognizePCA(trainims, trainlabels, ims, labels)
-saveIm(pcas, "pcas", pcas.shape[0])
+#savePCAs(pcas)
+#saveIm(pcas, "pcas", pcas.shape[0])
 #testafine(ims)
 #runtest(ims, labels, afineKNN, 10)
 #saveIm(ims, "mnist", 10)
